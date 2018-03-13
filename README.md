@@ -1,12 +1,12 @@
-# sequelize-auto-migrations
-Migration generator &amp;&amp; runner for sequelize
+# sequelize-auto-migrations-ng
+Migration generator for sequelize. This is a fork from https://github.com/flexxnn/sequelize-auto-migrations
 
-This package provide two tools:
+This package provides one tool:
 * `makemigration` - tool for create new migrations
-* `runmigration` - tool for apply created by first tool migrations
 
 ## Install
-`npm install sequelize-auto-migrations`
+Until there is a proper npm release, you can use
+`npm install manuelvillar/sequelize-auto-migrations-ng`
 
 ## Usage
 * Init sequelize, with sequelize-cli, using `sequelize init`
@@ -26,17 +26,17 @@ To create and then execute migration, use:
 `makemigration --name <name> -x`
 
 ## Executing migrations
-* There is simple command to perform all created migrations (from selected revision):
+* Use standard sequelize-cli 
+`sequelize db:migrate`
+* To start from a revision, use `--from <name>`
+* If migration fails, you can continue, use `--from <name>`
+* To prevent execution next migrations, use `--to <name>`
 
-`node ./node_modules/sequelize-auto-migrations/bin/runmigration`
-* To select a revision, use `--rev <x>`
-* If migration fails, you can continue, use `--pos <x>`
-* To prevent execution next migrations, use `--one`
 
-
-For more information, use `makemigration --help`, `runmigration --help`
+For more information, use `makemigration --help`, `sequelize --help db:migrate`
 
 ## TODO:
+* Remove `_current.json` file from `migrations` dir.
 * Migration action sorting procedure need some fixes. When many foreign keys in tables, there is a bug with action order. Now, please check it manually (`--preview` option)
 * Need to check (and maybe fix) field types: `BLOB`, `RANGE`, `ARRAY`, `GEOMETRY`, `GEOGRAPHY`
 * Downgrade is not supported, add it
