@@ -32,5 +32,10 @@
     "lodash": "^4.17.4",
     "object-hash": "^1.1.8",
     "sequelize": "^4.3.2"
+  },
+  "devDependencies": {
+    "eslint": "^4.18.2",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.9.0"
   }
 }
