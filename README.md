@@ -14,6 +14,8 @@ This package provides one tool:
 
 `node ./node_modules/sequelize-auto-migrations/bin/makemigration --name <migration name>`
 * Change models and run it again, the migration file will be modified, it won't create a new one until you actually execute the migration.
+
+  You can change this behavior using `-k` option and a different name for the migration.
 * To preview new migration, without writing any changes, you can run:
 
 `node ./node_modules/sequelize-auto-migrations/bin/makemigration --preview`
@@ -22,7 +24,7 @@ This package provides one tool:
 
 
 ## Executing migrations
-* Use standard sequelize-cli 
+* Use standard sequelize-cli
 `sequelize db:migrate`
 * To start from a revision, use `--from <name>`
 
@@ -30,7 +32,6 @@ This package provides one tool:
 For more information, use `makemigration --help`, `sequelize --help db:migrate`
 
 ## TODO:
-* Remove migration files with the same revision number from `migrations` dir.
 * Migration action sorting procedure need some fixes. When many foreign keys in tables, there is a bug with action order. Now, please check it manually (`--preview` option)
 * Need to check (and maybe fix) field types: `BLOB`, `RANGE`, `ARRAY`, `GEOMETRY`, `GEOGRAPHY`
 * Downgrade is not supported, add it
