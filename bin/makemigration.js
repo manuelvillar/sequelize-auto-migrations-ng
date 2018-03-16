@@ -31,6 +31,9 @@ const optionDefinitions = [
     name: 'debug', alias: 'd', type: Boolean, description: 'Show error messages to debug problems',
   },
   {
+    name: 'keep-files', alias: 'k', type: Boolean, description: 'Don\'t delete previous files from the current revision (requires a unique --name option for each file)',
+  },
+  {
     name: 'help', alias: 'h', type: Boolean, description: 'Show this message',
   },
 ];
@@ -129,6 +132,8 @@ queryInterface.createTable('SequelizeMeta', {
             // Bump revision
             currentState.revision = previousState.revision + 1;
 
+            if (!options['keep-files']) migrate.pruneOldMigFiles(currentState.revision, migrationsDir, options);
+
             // write migration to file
             const info = migrate.writeMigration(
               currentState.revision,
@@ -143,30 +148,19 @@ queryInterface.createTable('SequelizeMeta', {
             // save current state
             // Ugly hack, see https://github.com/sequelize/sequelize/issues/8310
             const rows = [{
-              revision: info.info.revision,
+              revision: currentState.revision,
               name: info.info.name,
               state: JSON.stringify(currentState),
             }];
-            // const SequelizeMetaMigrations = sequelize.define('sequelizeMetaMigrations', {
-            //   name: {
-            //     type: Sequelize.STRING,
-            //     allowNull: false,
-            //     unique: true,
-            //     primaryKey: true,
-            //   },
-            //   state: {
-            //     type: Sequelize.JSON,
-            //     allowNull: false,
-            //   },
-            // }, {});
-            queryInterface.bulkDelete('SequelizeMetaMigrations', { revision: info.info.revision })
+
+            queryInterface.bulkDelete('SequelizeMetaMigrations', { revision: currentState.revision })
               .then(() => {
                 queryInterface.bulkInsert('SequelizeMetaMigrations', rows)
                   .then(() => {
                     if (options.verbose) console.log('Updated state on DB.');
                     if (options.execute) {
                       console.log(`Use sequelize CLI:
-  sequelize db:migrate --to ${info.info.revision}-${info.info.name} ${options['migrations-path'] ? `--migrations-path=${options['migrations-path']}` : ''} ${options['models-path'] ? `--models-path=${options['models-path']}` : ''}`);
+  sequelize db:migrate --to ${currentState.revision}-${info.info.name} ${options['migrations-path'] ? `--migrations-path=${options['migrations-path']}` : ''} ${options['models-path'] ? `--models-path=${options['models-path']}` : ''}`);
                       process.exit(0);
                     } else { process.exit(0); }
                   }).catch((err) => { if (options.debug) console.error(err); });
