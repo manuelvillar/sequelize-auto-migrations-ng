@@ -147,18 +147,7 @@ queryInterface.createTable('SequelizeMeta', {
               name: info.info.name,
               state: JSON.stringify(currentState),
             }];
-            // const SequelizeMetaMigrations = sequelize.define('sequelizeMetaMigrations', {
-            //   name: {
-            //     type: Sequelize.STRING,
-            //     allowNull: false,
-            //     unique: true,
-            //     primaryKey: true,
-            //   },
-            //   state: {
-            //     type: Sequelize.JSON,
-            //     allowNull: false,
-            //   },
-            // }, {});
+
             queryInterface.bulkDelete('SequelizeMetaMigrations', { revision: info.info.revision })
               .then(() => {
                 queryInterface.bulkInsert('SequelizeMetaMigrations', rows)
