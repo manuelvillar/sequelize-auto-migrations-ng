@@ -2,10 +2,10 @@
 
 const commandLineArgs = require('command-line-args');
 const beautify = require('js-beautify').js_beautify;
+const Sequelize = require('sequelize');
 
 const migrate = require('../lib/migrate');
 
-const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
 
@@ -24,7 +24,15 @@ const optionDefinitions = [
   },
   { name: 'migrations-path', type: String, description: 'The path to the migrations folder' },
   { name: 'models-path', type: String, description: 'The path to the models folder' },
-  { name: 'help', type: Boolean, description: 'Show this message' },
+  {
+    name: 'verbose', alias: 'v', type: Boolean, description: 'Show details about the execution',
+  },
+  {
+    name: 'debug', alias: 'd', type: Boolean, description: 'Show error messages to debug problems',
+  },
+  {
+    name: 'help', alias: 'h', type: Boolean, description: 'Show this message',
+  },
 ];
 
 const options = commandLineArgs(optionDefinitions);
@@ -41,7 +49,6 @@ if (options.help) {
 const migrationsDir = path.join(process.env.PWD, options['migrations-path'] || 'migrations');
 const modelsDir = path.join(process.env.PWD, options['models-path'] || 'models');
 
-
 // current state
 const currentState = {
   tables: {},
@@ -54,67 +61,117 @@ let previousState = {
   tables: {},
 };
 
-try {
-  previousState = JSON.parse(fs.readFileSync(path.join(migrationsDir, '_current.json')));
-} catch (e) { /* Silently ignore errors in JSON */ }
-
-// console.log(path.join(migrationsDir, '_current.json'),
-//   JSON.parse(fs.readFileSync(path.join(migrationsDir, '_current.json') )))
 
 const { sequelize } = require(modelsDir); /* eslint import/no-dynamic-require: off */
 
+if (!options.debug) sequelize.options.logging = false;
+
+const queryInterface = require(modelsDir).sequelize.getQueryInterface();
 const { models } = sequelize;
 
-currentState.tables = migrate.reverseModels(sequelize, models);
+// This is the table that sequelize uses
+queryInterface.createTable('SequelizeMeta', {
+  name: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    unique: true,
+    primaryKey: true,
+  },
+}).then(() => {
+  queryInterface.createTable('SequelizeMetaMigrations', {
+    revision: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      unique: true,
+      primaryKey: true,
+    },
+    name: {
+      type: Sequelize.STRING,
+      allowNull: false,
+    },
+    state: {
+      type: Sequelize.JSON,
+      allowNull: false,
+    },
+  }).then(() => {
+  // We get the state at the last migration executed
+    sequelize.query('SELECT name FROM "SequelizeMeta" ORDER BY "name" desc limit 1', { type: sequelize.QueryTypes.SELECT })
+      .then((lastMigrationName) => {
+        sequelize.query(`SELECT state FROM "SequelizeMetaMigrations" where "revision" = '${lastMigrationName === [] ? lastMigrationName.split('-')[0] : -1}'`, { type: sequelize.QueryTypes.SELECT })
+          .then((lastMigrationState) => {
+            try {
+              previousState = JSON.parse(lastMigrationState);
+            } catch (e) { /* silently ignore if state is empty */ }
 
-const actions = migrate.parseDifference(previousState.tables, currentState.tables);
+            currentState.tables = migrate.reverseModels(sequelize, models);
 
-// sort actions
-migrate.sortActions(actions);
+            const actions = migrate.parseDifference(previousState.tables, currentState.tables);
 
-const migration = migrate.getMigration(actions);
+            // sort actions
+            migrate.sortActions(actions);
 
-if (migration.commandsUp.length === 0) {
-  console.log('No changes found');
-  process.exit(0);
-}
+            const migration = migrate.getMigration(actions);
 
-// log migration actions
-_.each(migration.consoleOut, (v) => { console.log(`[Actions] ${v}`); });
+            if (migration.commandsUp.length === 0) {
+              console.log('No changes found');
+              process.exit(0);
+            }
 
-if (options.preview) {
-  console.log('Migration result:');
-  console.log(beautify(`[ \n${migration.commandsUp.join(', \n')} \n];\n`));
-  process.exit(0);
-}
+            // log migration actions
+            _.each(migration.consoleOut, (v) => { console.log(`[Actions] ${v}`); });
 
-// backup _current file
-if (fs.existsSync(path.join(migrationsDir, '_current.json'))) {
-  fs.writeFileSync(
-    path.join(migrationsDir, '_current_bak.json'),
-    fs.readFileSync(path.join(migrationsDir, '_current.json')),
-  );
-}
+            if (options.preview) {
+              console.log('Migration result:');
+              console.log(beautify(`[ \n${migration.commandsUp.join(', \n')} \n];\n`));
+              process.exit(0);
+            }
 
+            // Bump revision
+            currentState.revision = previousState.revision + 1;
 
-// save current state
-currentState.revision = previousState.revision + 1;
-fs.writeFileSync(path.join(migrationsDir, '_current.json'), JSON.stringify(currentState, null, 4));
+            // write migration to file
+            const info = migrate.writeMigration(
+              currentState.revision,
+              migration,
+              migrationsDir,
+              (options.name) ? options.name : 'noname',
+              (options.comment) ? options.comment : '',
+            );
 
-// write migration to file
-const info = migrate.writeMigration(
-  currentState.revision,
-  migration,
-  migrationsDir,
-  (options.name) ? options.name : 'noname',
-  (options.comment) ? options.comment : '',
-);
+            console.log(`New migration to revision ${currentState.revision} has been saved to file '${info.filename}'`);
 
-console.log(`New migration to revision ${currentState.revision} has been saved to file '${info.filename}'`);
-
-if (options.execute) {
-  migrate.executeMigration(sequelize.getQueryInterface(), info.filename, 0, (err) => {
-    if (!err) { console.log('Migration has been executed successfully'); } else { console.log('Errors, during migration execution', err); }
-    process.exit(0);
-  });
-} else { process.exit(0); }
+            // save current state
+            // Ugly hack, see https://github.com/sequelize/sequelize/issues/8310
+            const rows = [{
+              revision: info.info.revision,
+              name: info.info.name,
+              state: JSON.stringify(currentState),
+            }];
+            // const SequelizeMetaMigrations = sequelize.define('sequelizeMetaMigrations', {
+            //   name: {
+            //     type: Sequelize.STRING,
+            //     allowNull: false,
+            //     unique: true,
+            //     primaryKey: true,
+            //   },
+            //   state: {
+            //     type: Sequelize.JSON,
+            //     allowNull: false,
+            //   },
+            // }, {});
+            queryInterface.bulkDelete('SequelizeMetaMigrations', { revision: info.info.revision })
+              .then(() => {
+                queryInterface.bulkInsert('SequelizeMetaMigrations', rows)
+                  .then(() => {
+                    if (options.verbose) console.log('Updated state on DB.');
+                    if (options.execute) {
+                      console.log(`Use sequelize CLI:
+  sequelize db:migrate --to ${info.info.revision}-${info.info.name} ${options['migrations-path'] ? `--migrations-path=${options['migrations-path']}` : ''} ${options['models-path'] ? `--models-path=${options['models-path']}` : ''}`);
+                      process.exit(0);
+                    } else { process.exit(0); }
+                  }).catch((err) => { if (options.debug) console.error(err); });
+              }).catch((err) => { if (options.debug) console.error(err); });
+          }).catch((err) => { if (options.debug) console.error(err); });
+      }).catch((err) => { if (options.debug) console.error(err); });
+  }).catch((err) => { if (options.debug) console.error(err); });
+}).catch((err) => { if (options.debug) console.error(err); });
