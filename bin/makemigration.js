@@ -130,39 +130,39 @@ queryInterface.createTable('SequelizeMeta', {
             // Bump revision
             currentState.revision = previousState.revision + 1;
 
-            if (!options['keep-files']) migrate.pruneOldMigFiles(currentState.revision, migrationsDir, options);
+            migrate.pruneOldMigFiles(currentState.revision, migrationsDir, options).then(() => {
+              // write migration to file
+              const info = migrate.writeMigration(
+                currentState.revision,
+                migration,
+                migrationsDir,
+                (options.name) ? options.name : 'noname',
+                (options.comment) ? options.comment : '',
+              );
 
-            // write migration to file
-            const info = migrate.writeMigration(
-              currentState.revision,
-              migration,
-              migrationsDir,
-              (options.name) ? options.name : 'noname',
-              (options.comment) ? options.comment : '',
-            );
+              console.log(`New migration to revision ${currentState.revision} has been saved to file '${info.filename}'`);
 
-            console.log(`New migration to revision ${currentState.revision} has been saved to file '${info.filename}'`);
+              // save current state
+              // Ugly hack, see https://github.com/sequelize/sequelize/issues/8310
+              const rows = [{
+                revision: currentState.revision,
+                name: info.info.name,
+                state: JSON.stringify(currentState),
+              }];
 
-            // save current state
-            // Ugly hack, see https://github.com/sequelize/sequelize/issues/8310
-            const rows = [{
-              revision: currentState.revision,
-              name: info.info.name,
-              state: JSON.stringify(currentState),
-            }];
-
-            queryInterface.bulkDelete('SequelizeMetaMigrations', { revision: currentState.revision })
-              .then(() => {
-                queryInterface.bulkInsert('SequelizeMetaMigrations', rows)
-                  .then(() => {
-                    if (options.verbose) console.log('Updated state on DB.');
-                    if (options.execute) {
-                      console.log(`Use sequelize CLI:
-  sequelize db:migrate --to ${currentState.revision}-${info.info.name} ${options['migrations-path'] ? `--migrations-path=${options['migrations-path']}` : ''} ${options['models-path'] ? `--models-path=${options['models-path']}` : ''}`);
-                      process.exit(0);
-                    } else { process.exit(0); }
-                  }).catch((err) => { if (options.debug) console.error(err); });
-              }).catch((err) => { if (options.debug) console.error(err); });
+              queryInterface.bulkDelete('SequelizeMetaMigrations', { revision: currentState.revision })
+                .then(() => {
+                  queryInterface.bulkInsert('SequelizeMetaMigrations', rows)
+                    .then(() => {
+                      if (options.verbose) console.log('Updated state on DB.');
+                      if (options.execute) {
+                        console.log(`Use sequelize CLI:
+    sequelize db:migrate --to ${currentState.revision}-${info.info.name} ${options['migrations-path'] ? `--migrations-path=${options['migrations-path']}` : ''} ${options['models-path'] ? `--models-path=${options['models-path']}` : ''}`);
+                        process.exit(0);
+                      } else { process.exit(0); }
+                    }).catch((err) => { if (options.debug) console.error(err); });
+                }).catch((err) => { if (options.debug) console.error(err); });
+            });
           }).catch((err) => { if (options.debug) console.error(err); });
       }).catch((err) => { if (options.debug) console.error(err); });
   }).catch((err) => { if (options.debug) console.error(err); });
