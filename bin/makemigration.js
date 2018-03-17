@@ -99,12 +99,10 @@ queryInterface.createTable('SequelizeMeta', {
   }).then(() => {
   // We get the state at the last migration executed
     sequelize.query('SELECT name FROM "SequelizeMeta" ORDER BY "name" desc limit 1', { type: sequelize.QueryTypes.SELECT })
-      .then((lastMigrationName) => {
-        sequelize.query(`SELECT state FROM "SequelizeMetaMigrations" where "revision" = '${lastMigrationName === [] ? lastMigrationName.split('-')[0] : -1}'`, { type: sequelize.QueryTypes.SELECT })
-          .then((lastMigrationState) => {
-            try {
-              previousState = JSON.parse(lastMigrationState);
-            } catch (e) { /* silently ignore if state is empty */ }
+      .then(([lastExecutedMigration]) => {
+        sequelize.query(`SELECT state FROM "SequelizeMetaMigrations" where "revision" = '${lastExecutedMigration === undefined ? -1 : lastExecutedMigration.name.split('-')[0]}'`, { type: sequelize.QueryTypes.SELECT })
+          .then(([lastMigration]) => {
+            if (lastMigration !== undefined) previousState = lastMigration.state;
 
             currentState.tables = migrate.reverseModels(sequelize, models);
 
