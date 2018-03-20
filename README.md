@@ -33,6 +33,6 @@ For more information, use `makemigration --help`, `sequelize --help db:migrate`
 
 ## TODO:
 * Migration action sorting procedure need some fixes. When many foreign keys in tables, there is a bug with action order. Now, please check it manually (`--preview` option)
-* Need to check (and maybe fix) field types: `BLOB`, `RANGE`, `ARRAY`, `GEOMETRY`, `GEOGRAPHY`
+* Need to check (and maybe fix) field types: `BLOB`, `RANGE`, `GEOMETRY`, `GEOGRAPHY`
 * Downgrade is not supported, add it
 * This module tested with postgresql (I use it with my projects). Test with mysql and sqlite.
