@@ -1,6 +1,6 @@
 {
   "name": "sequelize-auto-migrations-ng",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "Sequelize migrations generator",
   "main": "index.js",
   "scripts": {
