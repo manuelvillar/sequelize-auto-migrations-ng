@@ -108,10 +108,16 @@ queryInterface.createTable('SequelizeMeta', {
 
             const actions = migrate.parseDifference(previousState.tables, currentState.tables);
 
+            const downActions = migrate.parseDifference(currentState.tables, previousState.tables);
+
             // sort actions
             migrate.sortActions(actions);
+            migrate.sortActions(downActions);
 
             const migration = migrate.getMigration(actions);
+            const tmp = migrate.getMigration(downActions);
+
+            migration.commandsDown = tmp.commandsUp;
 
             if (migration.commandsUp.length === 0) {
               console.log('No changes found');
@@ -124,6 +130,8 @@ queryInterface.createTable('SequelizeMeta', {
             if (options.preview) {
               console.log('Migration result:');
               console.log(beautify(`[ \n${migration.commandsUp.join(', \n')} \n];\n`));
+              console.log('Undo commands:');
+              console.log(beautify(`[ \n${migration.commandsDown.join(', \n')} \n];\n`));
               process.exit(0);
             }
 
