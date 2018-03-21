@@ -49,8 +49,8 @@ if (options.help) {
   process.exit(0);
 }
 
-const migrationsDir = path.join(process.env.PWD, options['migrations-path'] || 'migrations');
-const modelsDir = path.join(process.env.PWD, options['models-path'] || 'models');
+const migrationsDir = path.join(process.env.PWD || process.cwd(), options['migrations-path'] || 'migrations');
+const modelsDir = path.join(process.env.PWD || process.cwd(), options['models-path'] || 'models');
 
 // current state
 const currentState = {
