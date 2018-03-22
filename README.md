@@ -1,3 +1,5 @@
+[![NPM](https://nodei.co/npm/sequelize-auto-migrations-ng.png?compact=true)](https://nodei.co/npm/sequelize-auto-migrations-ng/)
+
 # sequelize-auto-migrations-ng
 Migration generator for sequelize.
 
