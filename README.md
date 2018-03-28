@@ -40,7 +40,6 @@ For more information, use `makemigration --help`, `sequelize --help db:migrate`
 * Migration action sorting procedure need some fixes. When many foreign keys in tables, there is a bug with action order. For now, please check it manually (`--preview` option)
 * Need to check (and maybe fix) field types: `BLOB`, `RANGE`, `GEOMETRY`, `GEOGRAPHY`
 * This module has been tested with postgresql (I use it with my projects). Test with mysql and sqlite.
-* Some times, when reusing the same name for a migration, the new migration file is deleted after being written, simply rerunning the command fixes it.
 
 ## Credits
 This is a fork from https://github.com/flexxnn/sequelize-auto-migrations
