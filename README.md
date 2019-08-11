@@ -1,7 +1,7 @@
 [![NPM](https://nodei.co/npm/sequelize-auto-migrations-ng.png?compact=true)](https://nodei.co/npm/sequelize-auto-migrations-ng/)
 
 # sequelize-auto-migrations-ng
-Migration generator for sequelize.
+Migration generator for sequelize with true migrations in database.
 
 This package provides one tool:
 * `makemigration` - tool for create new migrations
@@ -23,6 +23,22 @@ This package provides one tool:
 `node ./node_modules/sequelize-auto-migrations/bin/makemigration --preview`
 
 `makemigration` tool creates a table, `SequelizeMetaMigrations` in your database, that is used to calculate difference to the next migration. Do not remove it!
+
+You could add these 2 scripts to `package.json`:
+
+```
+"scripts": {
+    ...
+    "migrate": "DEBUG=* node ./node_modules/.bin/sequelize db:migrate  --debug",
+    "makemigrations": "DEBUG=* node ./node_modules/sequelize-auto-migrations-ng/bin/makemigration -d -v ",
+```
+
+And then use
+
+```
+npm run makemigration -- --name initial_version
+npm run migrate
+```
 
 
 ## Executing migrations
