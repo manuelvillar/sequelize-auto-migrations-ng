@@ -31,7 +31,7 @@
     "js-beautify": "^1.6.14",
     "lodash": "^4.17.4",
     "object-hash": "^1.1.8",
-    "sequelize": "^4.3.2"
+    "sequelize": "^5.15.1"
   },
   "devDependencies": {
     "eslint": "^4.18.2",
