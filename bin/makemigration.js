@@ -98,9 +98,9 @@ queryInterface.createTable('SequelizeMeta', {
     },
   }).then(() => {
   // We get the state at the last migration executed
-    sequelize.query('SELECT name FROM "SequelizeMeta" ORDER BY "name" desc limit 1', { type: sequelize.QueryTypes.SELECT })
+    sequelize.query('SELECT name FROM `SequelizeMeta` ORDER BY `name` desc limit 1', { type: sequelize.QueryTypes.SELECT })
       .then(([lastExecutedMigration]) => {
-        sequelize.query(`SELECT state FROM "SequelizeMetaMigrations" where "revision" = '${lastExecutedMigration === undefined ? -1 : lastExecutedMigration.name.split('-')[0]}'`, { type: sequelize.QueryTypes.SELECT })
+        sequelize.query(`SELECT state FROM \`SequelizeMetaMigrations\` where \`revision\` = '${lastExecutedMigration === undefined ? -1 : lastExecutedMigration.name.split('-')[0]}'`, { type: sequelize.QueryTypes.SELECT })
           .then(([lastMigration]) => {
             if (lastMigration !== undefined) previousState = lastMigration.state;
 
